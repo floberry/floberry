@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>도르래 시스템 - 나무토막과 추의 가속도 계산</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .simulation-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .control-panel {
+            width: 100%;
+            min-width: 250px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        h1, h2, h3 {
+            color: #333;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.8em;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        h2 {
+            border-bottom: 2px solid #4682B4;
+            padding-bottom: 5px;
+            margin-top: 0;
+            font-size: 1.3em;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #444;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4682B4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #3a6d99;
+        }
+        #resetBtn {
+            background-color: #f0ad4e;
+        }
+        #resetBtn:hover {
+            background-color: #ec971f;
+        }
+        #startBtn {
+            background-color: #5cb85c;
+        }
+        #startBtn:hover {
+            background-color: #449d44;
+        }
+        .feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .correct {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .incorrect {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        .formula-box {
+            background-color: #eaf7ff;
+            border-left: 4px solid #4682B4;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .hint {
+            color: #31708f;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        
+        /* 스마트폰 세로 화면에 최적화된 스타일 */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            .simulation-container {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            button {
+                width: 100%;
+                margin-bottom: 8px;
+                margin-right: 0;
+            }
+            .feedback {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>도르래 시스템</h1>
+    
+    <div class="simulation-container">
+        <canvas id="simulationCanvas" width="700" height="350"></canvas>
+        
+        <div class="control-panel">
+            <h2>가속도 계산하기</h2>
+            <p>주어진 질량을 바탕으로 가속도 값을 계산하세요. <br>나무토막 질량: <span id="cartMass">0 kg</span>, 추 질량: <span id="weightMass">0 kg</span>, g = 10 m/s²</p>
+            
+            <label for="accelerationInput">가속도 값 (m/s²):</label>
+            <input type="number" id="accelerationInput" step="0.01" placeholder="가속도 값 입력">
+            
+            <div style="display: flex; flex-direction: column;">
+                <button id="checkBtn">확인하기</button>
+                <button id="startBtn">움직임 보기</button>
+                <button id="resetBtn">새 문제</button>
+            </div>
+            
+            <div id="feedback" class="feedback"></div>
+            
+            <div id="resultDisplay" style="margin-top: 15px;">
+                <div id="time" style="display: none;">시간: 0 초</div>
+                <div id="position" style="display: none;">이동 거리: 0 m</div>
+                <div id="speed" style="display: none;">속도: 0 m/s</div>
+            </div>
+            
+            <div class="formula-box">
+                <p>공식: a = (m₂·g) / (m₁ + m₂)</p>
+                <p>m₁ = 나무토막 질량, m₂ = 추 질량, g = 중력가속도</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 캔버스 및 요소 가져오기
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        const cartMassDisplay = document.getElementById('cartMass');
+        const weightMassDisplay = document.getElementById('weightMass');
+        const accelerationInput = document.getElementById('accelerationInput');
+        const checkBtn = document.getElementById('checkBtn');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const feedbackElement = document.getElementById('feedback');
+        const timeDisplay = document.getElementById('time');
+        const positionDisplay = document.getElementById('position');
+        const speedDisplay = document.getElementById('speed');
+
+        // 시뮬레이션 변수
+        let cartMass = 0; // 그램
+        let weightMass = 0; // 그램
+        let correctAcceleration = 0;
+        let isRunning = false;
+        let animationId = null;
+        let startTime = 0;
+        let currentTime = 0;
+        let position = 0;
+        let speed = 0;
+        
+        // 시뮬레이션 상수
+        const gravity = 10; // m/s²
+        const pixelsPerMeter = 100; // 화면 스케일
+        
+        // 초기 설정
+        const tableHeight = 150;
+        const tableWidth = 280; // 책상 폭 30% 줄임 (400 → 280)
+        const tableX = 100;
+        const tableY = canvas.height - tableHeight;
+        const pulleyRadius = 20;
+        const pulleyX = tableX + tableWidth + 40; // 도르래를 오른쪽으로 이동
+        const pulleyY = tableY;
+        const cartWidth = 80;
+        const cartHeight = 40;
+        let cartX = tableX + 50;
+        const cartY = tableY - cartHeight;
+        const weightWidth = 40;
+        const weightHeight = 60;
+        const weightCenterX = pulleyX + pulleyRadius; // 추의 중앙 X 좌표를 도르래 오른쪽으로 이동
+        let weightY = pulleyY + pulleyRadius * 2; // 추의 시작 위치 (도르래 오른쪽에서 지름만큼 내려간 위치)
+        const weightX = weightCenterX - weightWidth/2; // 추의 X 좌표
+        const maxDistance = 200; // 최대 이동 거리 (픽셀)
+
+        // 새 문제 생성 함수
+        function generateNewProblem() {
+            // 정확히 소수점 둘째 자리의 가속도 값을 가지는 질량 조합 배열
+            const exactCombinations = [
+                {cart: 100, weight: 100, acc: 5.00}, // 5.00 m/s²
+                {cart: 100, weight: 150, acc: 6.00}, // 6.00 m/s²
+                {cart: 100, weight: 300, acc: 7.50}, // 7.50 m/s²
+                {cart: 100, weight: 400, acc: 8.00}, // 8.00 m/s²
+                {cart: 100, weight: 900, acc: 9.00}, // 9.00 m/s²
+                {cart: 200, weight: 200, acc: 5.00}, // 5.00 m/s²
+                {cart: 200, weight: 300, acc: 6.00}, // 6.00 m/s²
+                {cart: 200, weight: 600, acc: 7.50}, // 7.50 m/s²
+                {cart: 200, weight: 800, acc: 8.00}, // 8.00 m/s²
+                {cart: 300, weight: 100, acc: 2.50}, // 2.50 m/s²
+                {cart: 300, weight: 200, acc: 4.00}, // 4.00 m/s²
+                {cart: 300, weight: 300, acc: 5.00}, // 5.00 m/s²
+                {cart: 300, weight: 900, acc: 7.50}, // 7.50 m/s²
+                {cart: 400, weight: 100, acc: 2.00}, // 2.00 m/s²
+                {cart: 400, weight: 400, acc: 5.00}, // 5.00 m/s²
+                {cart: 400, weight: 600, acc: 6.00}, // 6.00 m/s²
+                {cart: 500, weight: 500, acc: 5.00}, // 5.00 m/s²
+                {cart: 600, weight: 150, acc: 2.00}, // 2.00 m/s²
+                {cart: 600, weight: 200, acc: 2.50}, // 2.50 m/s²
+                {cart: 600, weight: 400, acc: 4.00}, // 4.00 m/s²
+                {cart: 600, weight: 600, acc: 5.00}, // 5.00 m/s²
+                {cart: 800, weight: 200, acc: 2.00}, // 2.00 m/s²
+                {cart: 800, weight: 800, acc: 5.00}, // 5.00 m/s²
+                {cart: 1000, weight: 1000, acc: 5.00}, // 5.00 m/s²
+                {cart: 1200, weight: 300, acc: 2.00}, // 2.00 m/s²
+                {cart: 1200, weight: 400, acc: 2.50}, // 2.50 m/s²
+                {cart: 1200, weight: 800, acc: 4.00}, // 4.00 m/s²
+                {cart: 1200, weight: 1200, acc: 5.00}, // 5.00 m/s²
+                {cart: 1600, weight: 400, acc: 2.00}, // 2.00 m/s²
+                {cart: 1600, weight: 1600, acc: 5.00}, // 5.00 m/s²
+                {cart: 2000, weight: 500, acc: 2.00}, // 2.00 m/s²
+                {cart: 2000, weight: 2000, acc: 5.00}, // 5.00 m/s²
+            ];
+            
+            // 랜덤하게 조합 선택
+            const selected = exactCombinations[Math.floor(Math.random() * exactCombinations.length)];
+            
+            cartMass = selected.cart;
+            weightMass = selected.weight;
+            correctAcceleration = selected.acc;
+            
+            // 디스플레이 업데이트
+            cartMassDisplay.textContent = (cartMass/1000).toFixed(2) + ' kg';
+            weightMassDisplay.textContent = (weightMass/1000).toFixed(2) + ' kg';
+            
+            // 입력 필드 및 피드백 초기화
+            accelerationInput.value = '';
+            feedbackElement.textContent = '';
+            feedbackElement.className = 'feedback';
+            
+            // 시간, 위치, 속도 표시 숨기기
+            timeDisplay.style.display = 'none';
+            positionDisplay.style.display = 'none';
+            speedDisplay.style.display = 'none';
+            
+            // 시뮬레이션 상태 초기화
+            resetSimulation();
+            
+            // 초기 상태 그리기
+            drawSystem();
+        }
+        
+        // 시뮬레이션 초기화
+        function resetSimulation() {
+            isRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            startTime = 0;
+            currentTime = 0;
+            position = 0;
+            speed = 0;
+            cartX = tableX + 50;
+            weightY = pulleyY + pulleyRadius * 2; // 초기 위치 조정
+            
+            // 상태 표시 업데이트
+            updateStateDisplay();
+        }
+        
+        // 상태 표시 업데이트
+        function updateStateDisplay() {
+            timeDisplay.textContent = '시간: ' + currentTime.toFixed(2) + ' 초';
+            positionDisplay.textContent = '이동 거리: ' + (position / pixelsPerMeter).toFixed(2) + ' m';
+            speedDisplay.textContent = '속도: ' + speed.toFixed(2) + ' m/s';
+        }
+        
+        // 시스템 그리기
+        function drawSystem() {
+            // 캔버스 지우기
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 배경 - 약간의 그라데이션
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#e6f7ff');
+            gradient.addColorStop(1, '#ffffff');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 테이블 그리기
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(tableX, tableY, tableWidth, tableHeight);
+            
+            // 테이블 다리 그리기
+            ctx.fillStyle = '#6B3E0B';
+            ctx.fillRect(tableX + 20, tableY + 20, 15, tableHeight - 20);
+            ctx.fillRect(tableX + tableWidth - 35, tableY + 20, 15, tableHeight - 20);
+            
+            // 테이블 표면 세부 표현
+            ctx.fillStyle = '#A06633';
+            ctx.fillRect(tableX, tableY, tableWidth, 10);
+            
+            // "마찰이 없는 면" 표시
+            ctx.fillStyle = '#000';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('마찰이 없는 면', tableX + tableWidth/2, tableY + 25);
+            
+            // 도르래 그리기
+            ctx.beginPath();
+            ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#555';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pulleyX, pulleyY, pulleyRadius - 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#777';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pulleyX, pulleyY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            
+            // 도르래 지지대 그리기 - 도르래에서 책상 오른쪽 모서리까지 연결
+            ctx.fillStyle = '#444';
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#444';
+            ctx.beginPath();
+            ctx.moveTo(pulleyX, pulleyY); // 도르래 중심에서 시작
+            ctx.lineTo(tableX + tableWidth, tableY); // 책상 오른쪽 모서리와 연결
+            ctx.stroke();
+            
+            // 나무토막 그리기 (수레 대신)
+            ctx.fillStyle = '#8B4513'; // 나무색
+            // 질량에 따라 나무토막 크기 조정
+            const adjustedBlockWidth = cartWidth * (cartMass > 1000 ? 1.2 : (cartMass > 500 ? 1 : 0.8));
+            const adjustedBlockHeight = cartHeight * (cartMass > 1000 ? 1.2 : (cartMass > 500 ? 1 : 0.8));
+            ctx.fillRect(cartX, cartY + (cartHeight - adjustedBlockHeight), adjustedBlockWidth, adjustedBlockHeight);
+            
+            // 나무 질감 추가
+            ctx.strokeStyle = '#6B4226';
+            ctx.lineWidth = 1;
+            
+            // 나무결 추가
+            for (let i = 1; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(cartX, cartY + (cartHeight - adjustedBlockHeight) + (adjustedBlockHeight / 4) * i);
+                ctx.lineTo(cartX + adjustedBlockWidth, cartY + (cartHeight - adjustedBlockHeight) + (adjustedBlockHeight / 4) * i);
+                ctx.stroke();
+            }
+            
+            // 나무토막에 질량 표시
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText((cartMass/1000).toFixed(2) + ' kg', cartX + adjustedBlockWidth/2, cartY + (cartHeight - adjustedBlockHeight) + adjustedBlockHeight/2 + 5);
+            
+            // 추 그리기
+            ctx.fillStyle = '#A52A2A';
+            // 질량에 따라 추 크기 조정
+            const adjustedWeightWidth = weightWidth * (weightMass > 1000 ? 1.2 : (weightMass > 500 ? 1 : 0.8));
+            const adjustedWeightHeight = weightHeight * (weightMass > 1000 ? 1.2 : (weightMass > 500 ? 1 : 0.8));
+            const adjustedWeightX = weightCenterX - (adjustedWeightWidth / 2); // 중앙 기준으로 X 위치 조정
+            ctx.fillRect(adjustedWeightX, weightY, adjustedWeightWidth, adjustedWeightHeight);
+            
+            // 추에 질량 표시 (오른쪽 바깥에 검은색으로)
+            ctx.fillStyle = '#000';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText((weightMass/1000).toFixed(2) + ' kg', adjustedWeightX + adjustedWeightWidth + 5, weightY + adjustedWeightHeight/2 + 5);
+            
+            // 실 그리기
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            // 나무토막에서 도르래 위쪽까지 실
+            ctx.moveTo(cartX + adjustedBlockWidth, cartY + (cartHeight - adjustedBlockHeight) + adjustedBlockHeight/2);
+            ctx.lineTo(pulleyX, pulleyY - pulleyRadius);
+            
+            // 도르래를 따라가는 실 (오른쪽까지 반시계 방향)
+            ctx.arc(pulleyX, pulleyY, pulleyRadius, 3 * Math.PI / 2, 0, false);
+            
+            // 도르래 오른쪽에서 추 상단 중앙까지 수직으로 실 연결
+            ctx.lineTo(weightCenterX, weightY);
+            
+            ctx.stroke();
+        }
+        
+        // 시뮬레이션 시작
+        function startSimulation() {
+            if (isRunning) return;
+            
+            const userAcceleration = parseFloat(accelerationInput.value);
+            if (isNaN(userAcceleration) || userAcceleration <= 0) {
+                feedbackElement.textContent = '유효한 가속도 값을 입력해주세요.';
+                feedbackElement.className = 'feedback incorrect';
+                return;
+            }
+            
+            isRunning = true;
+            startTime = performance.now();
+            
+            // 상태 표시 보이기
+            timeDisplay.style.display = 'block';
+            positionDisplay.style.display = 'block';
+            speedDisplay.style.display = 'block';
+            
+            animateSystem();
+        }
+        
+        // 시스템 애니메이션
+        function animateSystem() {
+            if (!isRunning) return;
+            
+            const now = performance.now();
+            const elapsedMilliseconds = now - startTime;
+            currentTime = elapsedMilliseconds / 1000; // 초 단위로 변환
+            
+            const userAcceleration = parseFloat(accelerationInput.value);
+            
+            // 가속도 공식을 사용하여 위치 계산
+            position = 0.5 * userAcceleration * currentTime * currentTime * pixelsPerMeter;
+            speed = userAcceleration * currentTime;
+            
+            // 최대 이동 거리 제한
+            if (position >= maxDistance) {
+                position = maxDistance;
+                isRunning = false;
+            }
+            
+            // 물체 위치 업데이트
+            cartX = tableX + 50 + position;
+            weightY = pulleyY + pulleyRadius * 2 + position; // 초기 위치 기준으로 조정
+            
+            // 화면 업데이트
+            updateStateDisplay();
+            drawSystem();
+            
+            if (isRunning) {
+                animationId = requestAnimationFrame(animateSystem);
+            }
+        }
+        
+        // 사용자 입력 확인
+        function checkUserAnswer() {
+            const userAcceleration = parseFloat(accelerationInput.value);
+            
+            if (isNaN(userAcceleration)) {
+                feedbackElement.textContent = '유효한 숫자를 입력해주세요.';
+                feedbackElement.className = 'feedback incorrect';
+                return;
+            }
+            
+            // 정답 확인 (오차 범위 허용)
+            const epsilon = 0.05; // 허용 오차 (좀 더 정확하게 요구)
+            const isCorrect = Math.abs(userAcceleration - correctAcceleration) <= epsilon;
+            
+            if (isCorrect) {
+                feedbackElement.textContent = '정답입니다! 정확한 가속도 값은 ' + correctAcceleration.toFixed(2) + ' m/s²입니다.';
+                feedbackElement.className = 'feedback correct';
+            } else {
+                // 오답인 경우 정답을 알려줌
+                feedbackElement.textContent = '오답입니다. 정답은 ' + correctAcceleration.toFixed(2) + ' m/s²입니다. 계산 과정: a = (m₂·g) / (m₁ + m₂) = (' + 
+                    (weightMass/1000).toFixed(2) + 'kg × 10m/s²) / (' + (cartMass/1000).toFixed(2) + 'kg + ' + (weightMass/1000).toFixed(2) + 'kg)';
+                feedbackElement.className = 'feedback incorrect';
+            }
+        }
+        
+        // 이벤트 리스너
+        checkBtn.addEventListener('click', checkUserAnswer);
+        startBtn.addEventListener('click', startSimulation);
+        resetBtn.addEventListener('click', generateNewProblem);
+        
+        // 초기 문제 생성
+        generateNewProblem();
+    </script>
+</body>
+</html>
