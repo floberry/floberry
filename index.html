@@ -140,7 +140,7 @@
             </div>
             
             <div style="margin-top: 15px;">
-                <button id="startBtn">운동 확인</button>
+                <button id="startBtn">스타트/리셋</button>
                 <button id="resetBtn">새 문제</button>
             </div>
             
@@ -529,24 +529,24 @@
         
         // 시뮬레이션 시작 함수
         function startSimulation() {
-            if (state.isRunning) {
-                // 이미 실행 중이면 중지하고 초기화
+            // 현재 운동 상태를 확인 (운동 중이거나 운동이 끝난 상태)
+            if (state.isRunning || state.distance > 0) {
+                // 운동 중이거나 운동이 끝난 상태면 초기화
                 state.isRunning = false;
                 if (animationId) {
                     cancelAnimationFrame(animationId);
                     animationId = null;
                 }
                 resetSimulation();
-                return;
+            } else {
+                // 완전 초기 상태면 시작
+                state.isRunning = true;
+                state.startTime = performance.now();
+                infoPanel.style.display = 'block';
+                
+                // 애니메이션 시작
+                animateSystem();
             }
-            
-            // 입력값 확인 없이도 시작 가능
-            state.isRunning = true;
-            state.startTime = performance.now();
-            infoPanel.style.display = 'block';
-            
-            // 애니메이션 시작
-            animateSystem();
         }
         
         // 애니메이션 함수
