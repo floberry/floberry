@@ -105,6 +105,20 @@
             opacity: 1;
         }
 
+        .second-question {
+            opacity: 0;
+            transition: opacity 0.5s;
+            margin-top: 20px;
+        }
+
+        .second-question.show {
+            opacity: 1;
+        }
+
+        .second-question .question {
+            margin: 20px 0;
+        }
+
         .feedback {
             text-align: center;
             font-size: 18px;
@@ -159,17 +173,21 @@
             opacity: 1;
         }
 
-        .marker-label {
+        .wavelength-display {
             position: absolute;
-            top: -35px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background: #333;
+            transform: translate(-50%, -50%);
             color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            white-space: nowrap;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .wavelength-display.show {
+            opacity: 1;
         }
     </style>
 </head>
@@ -179,12 +197,8 @@
         
         <div class="spectrum-container">
             <div class="spectrum" id="spectrum">
-                <div class="position-marker" id="marker1">
-                    <div class="marker-label" id="label1"></div>
-                </div>
-                <div class="position-marker" id="marker2">
-                    <div class="marker-label" id="label2"></div>
-                </div>
+                <div class="position-marker" id="marker1"></div>
+                <div class="position-marker" id="marker2"></div>
             </div>
             <div class="wavelength-labels">
                 <span>380nm</span>
@@ -203,15 +217,37 @@
 
         <div class="colors-container">
             <div>
-                <div class="color-circle" id="color1" onclick="selectColor(1)"></div>
+                <div class="color-circle" id="color1" onclick="selectColor(1)">
+                    <div class="wavelength-display" id="wavelength1"></div>
+                </div>
             </div>
             <div class="comparison-result" id="comparisonResult"></div>
             <div>
-                <div class="color-circle" id="color2" onclick="selectColor(2)"></div>
+                <div class="color-circle" id="color2" onclick="selectColor(2)">
+                    <div class="wavelength-display" id="wavelength2"></div>
+                </div>
             </div>
         </div>
 
         <div class="feedback" id="feedback"></div>
+        
+        <div class="second-question" id="secondQuestion">
+            <div class="question">
+                에너지가 더 큰 색은 어느 색일까요?
+            </div>
+            
+            <div class="colors-container">
+                <div>
+                    <div class="color-circle" id="color3" onclick="selectEnergyColor(1)"></div>
+                </div>
+                <div class="comparison-result" id="comparisonResult2"></div>
+                <div>
+                    <div class="color-circle" id="color4" onclick="selectEnergyColor(2)"></div>
+                </div>
+            </div>
+            
+            <div class="feedback" id="feedback2"></div>
+        </div>
         
         <button class="next-button" onclick="generateNewColors()">새 문제</button>
     </div>
@@ -219,6 +255,7 @@
     <script>
         let currentColors = {};
         let answered = false;
+        let energyAnswered = false;
 
         function wavelengthToRGB(wavelength) {
             let r, g, b;
@@ -292,21 +329,30 @@
 
         function generateNewColors() {
             answered = false;
+            energyAnswered = false;
             const [wave1, wave2] = generateRandomWavelengths();
             
             currentColors = {
-                color1: { wavelength: wave1, isLonger: wave1 > wave2 },
-                color2: { wavelength: wave2, isLonger: wave2 > wave1 }
+                color1: { wavelength: wave1, isLonger: wave1 > wave2, hasMoreEnergy: wave1 < wave2 },
+                color2: { wavelength: wave2, isLonger: wave2 > wave1, hasMoreEnergy: wave2 < wave1 }
             };
 
-            // 색상 적용
+            // 색상 적용 (첫 번째와 두 번째 질문 모두)
             document.getElementById('color1').style.backgroundColor = wavelengthToRGB(wave1);
             document.getElementById('color2').style.backgroundColor = wavelengthToRGB(wave2);
+            document.getElementById('color3').style.backgroundColor = wavelengthToRGB(wave1);
+            document.getElementById('color4').style.backgroundColor = wavelengthToRGB(wave2);
 
             // 피드백 초기화
             document.getElementById('feedback').textContent = '';
             document.getElementById('feedback').className = 'feedback';
+            document.getElementById('feedback2').textContent = '';
+            document.getElementById('feedback2').className = 'feedback';
             document.getElementById('comparisonResult').classList.remove('show');
+            document.getElementById('comparisonResult2').classList.remove('show');
+            document.getElementById('secondQuestion').classList.remove('show');
+            document.getElementById('wavelength1').classList.remove('show');
+            document.getElementById('wavelength2').classList.remove('show');
 
             // 마커 숨기기
             document.getElementById('marker1').classList.remove('show');
@@ -342,6 +388,45 @@
 
             // 스펙트럼에 위치 표시
             showPositionMarkers();
+            
+            // 원 안에 파장 정보 표시
+            document.getElementById('wavelength1').textContent = `${currentColors.color1.wavelength}nm`;
+            document.getElementById('wavelength2').textContent = `${currentColors.color2.wavelength}nm`;
+            document.getElementById('wavelength1').classList.add('show');
+            document.getElementById('wavelength2').classList.add('show');
+            
+            // 두 번째 질문 표시
+            setTimeout(() => {
+                document.getElementById('secondQuestion').classList.add('show');
+            }, 500);
+        }
+
+        function selectEnergyColor(colorNum) {
+            if (energyAnswered) return;
+            
+            energyAnswered = true;
+            const selectedColor = currentColors[`color${colorNum}`];
+            const feedback2 = document.getElementById('feedback2');
+            const comparisonResult2 = document.getElementById('comparisonResult2');
+            
+            if (selectedColor.hasMoreEnergy) {
+                feedback2.textContent = '정답입니다!';
+                feedback2.className = 'feedback correct';
+            } else {
+                feedback2.textContent = '틀렸습니다!';
+                feedback2.className = 'feedback incorrect';
+            }
+
+            // 에너지 관계 표시 (파장이 짧을수록 에너지가 크므로 부등호 방향이 반대)
+            const wave1 = currentColors.color1.wavelength;
+            const wave2 = currentColors.color2.wavelength;
+            
+            if (wave1 < wave2) {  // 파장이 짧으면 에너지가 크다
+                comparisonResult2.textContent = '>';
+            } else {
+                comparisonResult2.textContent = '<';
+            }
+            comparisonResult2.classList.add('show');
         }
 
         function showPositionMarkers() {
@@ -357,14 +442,9 @@
             
             const marker1 = document.getElementById('marker1');
             const marker2 = document.getElementById('marker2');
-            const label1 = document.getElementById('label1');
-            const label2 = document.getElementById('label2');
             
             marker1.style.left = pos1 + 'px';
             marker2.style.left = pos2 + 'px';
-            
-            label1.textContent = `${wave1}nm`;
-            label2.textContent = `${wave2}nm`;
             
             marker1.classList.add('show');
             marker2.classList.add('show');
