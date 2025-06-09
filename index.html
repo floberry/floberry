@@ -20,14 +20,19 @@
             color: #333;
             margin-bottom: 40px;
         }
+        .simulation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
         .simulation-card {
             background: white;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             overflow: hidden;
             transition: transform 0.3s;
-            max-width: 500px;
-            margin: 0 auto;
         }
         .simulation-card:hover {
             transform: translateY(-5px);
@@ -88,7 +93,15 @@
     <div class="container">
         <h1>고등학교 물리학 시뮬레이션</h1>
         
-        <div class="simulation-card">
+<div class="simulation-grid">
+            <div class="simulation-card">
+                <!-- 스펙트럼 카드 -->
+            </div>
+            
+            <div class="simulation-card">
+                <!-- hydro 카드 -->
+            </div>
+        </div>
             <div class="thumbnail">
                 가시광선 스펙트럼
             </div>
@@ -103,40 +116,15 @@
     </div>
 </body>
 </html>
-<!-- 기존 스펙트럼 카드 아래에 추가 -->
 <div class="simulation-card">
-    <div class="thumbnail" style="background: [새로운 배경색/그라데이션];">
-        [hydro]
-    </div>
-    <div class="card-content">
-        <div class="card-title">[시뮬레이션 이름]</div>
-        <div class="card-description">
-            [시뮬레이션 설명]
+            <div class="thumbnail" style="background: linear-gradient(45deg, #4FC3F7, #29B6F6, #03A9F4);">
+                Hydro 시뮬레이션
+            </div>
+            <div class="card-content">
+                <div class="card-title">유체역학 시뮬레이션</div>
+                <div class="card-description">
+                    유체의 흐름과 압력 변화를 시각적으로 학습할 수 있는 인터랙티브 시뮬레이션입니다. 파스칼의 원리와 베르누이 정리를 이해해보세요.
+                </div>
+                <a href="./hydro/" class="start-button">시뮬레이션 시작</a>
+            </div>
         </div>
-        <a href="./[hydro]/" class="start-button">시뮬레이션 시작</a>
-    </div>
-</div>
-/* 기존 .simulation-card 스타일을 이것으로 교체 */
-.simulation-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 30px;
-    margin-top: 40px;
-}
-
-.simulation-card {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: transform 0.3s;
-}
-<!-- 기존 단일 카드를 이것으로 교체 -->
-<div class="simulation-grid">
-    <div class="simulation-card">
-        <!-- 스펙트럼 카드 -->
-    </div>
-    <div class="simulation-card">
-        <!-- 새 시뮬레이션 카드 -->
-    </div>
-</div>
