@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수소 원자 에너지 준위 시뮬레이션</title>
+    <meta name="description" content="보어의 수소 원자 모형을 통한 에너지 준위와 전자 전이 학습 도구">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+        }
+
+        .description {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .diagram-container {
+            width: 100%;
+            height: 320px;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .diagram-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #5a6268;
+        }
+
+        .btn:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        .question {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .question-text {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .options {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .option-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            background: white;
+            color: #6b7280;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            border-color: #9ca3af;
+        }
+
+        .option-btn:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        .option-btn.selected {
+            background-color: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+
+        .feedback {
+            min-height: 30px;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+        }
+
+        .feedback-success {
+            color: #059669;
+            font-weight: 500;
+        }
+
+        .feedback-error {
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        .feedback-placeholder {
+            color: #9ca3af;
+        }
+
+        .energy-input {
+            width: 5rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            margin: 0 0.5rem;
+        }
+
+        .energy-input:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 1px;
+            border-color: #007bff;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 접근성을 위한 스크린 리더 전용 텍스트 */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* 키보드 포커스 표시 */
+        *:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        button:focus, input:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 1px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container" role="main">
+        <h1 class="sr-only">수소 원자 에너지 준위 시뮬레이션</h1>
+        
+        <!-- 문제 설명 섹션 -->
+        <section class="card">
+            <h2 class="sr-only">문제 설명</h2>
+            <div class="description">
+                <p>그림은 보어의 수소 원자 모형에서 양자수 n에 따른 에너지 준위의 일부와 전자의 전이 a, b, c를 나타낸 것이다. a에서 흡수/방출되는 빛의 진동수는 f<sub>a</sub>이다.</p>
+            </div>
+
+            <!-- 에너지 다이어그램 -->
+            <div class="diagram-container">
+                <svg width="100%" height="100%" viewBox="0 0 400 320" role="img" aria-labelledby="diagram-title diagram-desc">
+                    <title id="diagram-title">수소 원자 에너지 준위 다이어그램</title>
+                    <desc id="diagram-desc">n=1부터 n=4까지의 에너지 준위와 전이 a, b, c를 보여주는 다이어그램</desc>
+                    
+                    <!-- 에너지 준위 선들 -->
+                    <g id="energy-levels">
+                        <line x1="40" y1="280" x2="360" y2="280" stroke="#666" stroke-width="3" />
+                        <text x="20" y="275" fill="#666" font-size="14" font-weight="bold">n=1</text>
+                        <text x="370" y="285" fill="#666" font-size="12">-13.60eV</text>
+                        
+                        <line x1="40" y1="160" x2="360" y2="160" stroke="#666" stroke-width="3" />
+                        <text x="20" y="155" fill="#666" font-size="14" font-weight="bold">n=2</text>
+                        <text x="370" y="165" fill="#666" font-size="12">-3.40eV</text>
+                        
+                        <line x1="40" y1="100" x2="360" y2="100" stroke="#666" stroke-width="3" />
+                        <text x="20" y="95" fill="#666" font-size="14" font-weight="bold">n=3</text>
+                        <text x="370" y="105" fill="#666" font-size="12">-1.51eV</text>
+                        
+                        <line x1="40" y1="70" x2="360" y2="70" stroke="#666" stroke-width="3" />
+                        <text x="20" y="65" fill="#666" font-size="14" font-weight="bold">n=4</text>
+                        <text x="370" y="75" fill="#666" font-size="12">-0.85eV</text>
+                    </g>
+
+                    <!-- 전이 화살표들 (JavaScript로 동적 생성) -->
+                    <g id="transitions"></g>
+                </svg>
+            </div>
+
+            <div class="diagram-footer">
+                <span>에너지 전이 다이어그램</span>
+                <button type="button" class="btn" onclick="generateNewTransitions()" aria-label="새로운 전이 패턴 생성">
+                    새로운 전이 생성
+                </button>
+            </div>
+        </section>
+
+        <!-- 문제 ㄱ -->
+        <section class="card">
+            <h2 class="sr-only">문제 ㄱ</h2>
+            <div class="question">
+                <span class="question-text">ㄱ. a에서 전자는 에너지를 흡수한다.</span>
+                <div class="options" role="radiogroup" aria-labelledby="question1-label">
+                    <span id="question1-label" class="sr-only">참 또는 거짓을 선택하세요</span>
+                    <button type="button" class="option-btn" id="q1-option-o" onclick="answerQuestion1('O')" aria-label="참">O</button>
+                    <button type="button" class="option-btn" id="q1-option-x" onclick="answerQuestion1('X')" aria-label="거짓">X</button>
+                </div>
+            </div>
+            
+            <div class="feedback" id="feedback1" role="status" aria-live="polite">
+                <span class="feedback-placeholder">O 또는 X를 선택해주세요.</span>
+            </div>
+        </section>
+
+        <!-- 문제 ㄴ -->
+        <section class="card hidden" id="question2-section">
+            <h2 class="sr-only">문제 ㄴ</h2>
+            <div class="question">
+                <label for="energy-input" class="question-text">
+                    ㄴ. a에서 전자가 <span id="process-type">흡수</span>한 에너지의 크기는 
+                    <input type="number" 
+                           id="energy-input" 
+                           class="energy-input" 
+                           step="0.01" 
+                           min="0" 
+                           max="20"
+                           placeholder="0.00"
+                           aria-describedby="energy-unit energy-help"> eV이다.
+                    <span id="energy-unit" class="sr-only">전자볼트 단위로 입력하세요</span>
+                </label>
+                <button type="button" class="btn" onclick="checkEnergyAnswer()" aria-describedby="energy-help">
+                    확인
+                </button>
+            </div>
+            
+            <div class="feedback" id="feedback2" role="status" aria-live="polite">
+                <span class="feedback-placeholder" id="energy-help">에너지 값을 입력하고 확인 버튼을 눌러주세요.</span>
+            </div>
+        </section>
+
+        <!-- 문제 ㄷ -->
+        <section class="card hidden" id="question3-section">
+            <h2 class="sr-only">문제 ㄷ</h2>
+            <div class="question">
+                <span class="question-text">ㄷ. 방출/흡수되는 빛의 파장은 a가 b보다 길다.</span>
+                <div class="options" role="radiogroup" aria-labelledby="question3-label">
+                    <span id="question3-label" class="sr-only">참 또는 거짓을 선택하세요</span>
+                    <button type="button" class="option-btn" id="q3-option-o" onclick="answerQuestion3('O')" aria-label="참">O</button>
+                    <button type="button" class="option-btn" id="q3-option-x" onclick="answerQuestion3('X')" aria-label="거짓">X</button>
+                </div>
+            </div>
+            
+            <div class="feedback" id="feedback3" role="status" aria-live="polite">
+                <span class="feedback-placeholder">O 또는 X를 선택해주세요.</span>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 전역 상태
+        let activeTransitions = [];
+        let userAnswers = {
+            question1: '',
+            question2: '',
+            question3: ''
+        };
+
+        // 에너지 준위 데이터
+        const energyLevels = {
+            1: { label: 'n=1', eV: -13.60 },
+            2: { label: 'n=2', eV: -3.40 },
+            3: { label: 'n=3', eV: -1.51 },
+            4: { label: 'n=4', eV: -0.85 }
+        };
+
+        // Y 위치 계산
+        function getYPosition(n) {
+            const positions = { 1: 280, 2: 160, 3: 100, 4: 70 };
+            return positions[n];
+        }
+
+        // 중복 없는 전이 생성
+        function generateTransitions() {
+            const transitions = [];
+            const used = new Set();
+            
+            for (let i = 0; i < 3; i++) {
+                let from, to, key;
+                do {
+                    from = Math.floor(Math.random() * 4) + 1;
+                    to = Math.floor(Math.random() * 4) + 1;
+                    while (to === from) to = Math.floor(Math.random() * 4) + 1;
+                    key = `${Math.min(from, to)}-${Math.max(from, to)}`;
+                } while (used.has(key));
+                
+                used.add(key);
+                transitions.push({
+                    name: ['a', 'b', 'c'][i],
+                    from,
+                    to,
+                    type: from > to ? 'emission' : 'absorption'
+                });
+            }
+            return transitions;
+        }
+
+        // SVG 전이 화살표 그리기
+        function drawTransitions() {
+            const transitionsGroup = document.getElementById('transitions');
+            transitionsGroup.innerHTML = '';
+
+            activeTransitions.forEach((transition, idx) => {
+                const fromY = getYPosition(transition.from);
+                const toY = getYPosition(transition.to);
+                const x = 140 + idx * 60;
+                const isEmission = transition.type === 'emission';
+
+                // 마커 정의
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', `arrow-${idx}`);
+                marker.setAttribute('markerWidth', '5');
+                marker.setAttribute('markerHeight', '3.5');
+                marker.setAttribute('refX', '4.5');
+                marker.setAttribute('refY', '1.75');
+                marker.setAttribute('orient', 'auto');
+
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', '0 0, 5 1.75, 0 3.5');
+                polygon.setAttribute('fill', '#444');
+
+                marker.appendChild(polygon);
+                defs.appendChild(marker);
+                transitionsGroup.appendChild(defs);
+
+                // 화살표 선
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', fromY);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', toY);
+                line.setAttribute('stroke', '#444');
+                line.setAttribute('stroke-width', '2');
+                line.setAttribute('marker-end', `url(#arrow-${idx})`);
+                if (!isEmission) {
+                    line.setAttribute('stroke-dasharray', '5,5');
+                }
+
+                // 전이 라벨
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x + 4);
+                text.setAttribute('y', (fromY + toY) / 2);
+                text.setAttribute('fill', '#444');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', 'bold');
+                text.textContent = transition.name;
+
+                transitionsGroup.appendChild(line);
+                transitionsGroup.appendChild(text);
+            });
+        }
+
+        // 새로운 전이 생성
+        function generateNewTransitions() {
+            activeTransitions = generateTransitions();
+            drawTransitions();
+            
+            // 모든 상태 초기화
+            userAnswers = { question1: '', question2: '', question3: '' };
+            
+            // UI 초기화
+            resetQuestion1();
+            resetQuestions23();
+        }
+
+        // 문제 1 초기화
+        function resetQuestion1() {
+            document.getElementById('q1-option-o').classList.remove('selected');
+            document.getElementById('q1-option-x').classList.remove('selected');
+            document.getElementById('feedback1').innerHTML = '<span class="feedback-placeholder">O 또는 X를 선택해주세요.</span>';
+        }
+
+        // 문제 2, 3 초기화 및 숨기기
+        function resetQuestions23() {
+            document.getElementById('question2-section').classList.add('hidden');
+            document.getElementById('question3-section').classList.add('hidden');
+            
+            document.getElementById('energy-input').value = '';
+            document.getElementById('feedback2').innerHTML = '<span class="feedback-placeholder">에너지 값을 입력하고 확인 버튼을 눌러주세요.</span>';
+            
+            document.getElementById('q3-option-o').classList.remove('selected');
+            document.getElementById('q3-option-x').classList.remove('selected');
+            document.getElementById('feedback3').innerHTML = '<span class="feedback-placeholder">O 또는 X를 선택해주세요.</span>';
+        }
+
+        // 문제 1 답안 처리
+        function answerQuestion1(answer) {
+            userAnswers.question1 = answer;
+            
+            // 버튼 상태 업데이트
+            document.getElementById('q1-option-o').classList.toggle('selected', answer === 'O');
+            document.getElementById('q1-option-x').classList.toggle('selected', answer === 'X');
+
+            const transitionA = activeTransitions.find(t => t.name === 'a');
+            if (!transitionA) {
+                document.getElementById('feedback1').innerHTML = '<span class="feedback-error">전이 a를 찾을 수 없습니다.</span>';
+                return;
+            }
+
+            const isAbsorption = transitionA.type === 'absorption';
+            const isCorrect = (answer === 'O' && isAbsorption) || (answer === 'X' && !isAbsorption);
+            
+            const processType = isAbsorption ? '흡수' : '방출';
+            document.getElementById('process-type').textContent = processType;
+            
+            if (isCorrect) {
+                document.getElementById('feedback1').innerHTML = '<span class="feedback-success">정답입니다. 전이 a는 ' + processType + ' 과정입니다.</span>';
+                
+                // 문제 2, 3 표시
+                document.getElementById('question2-section').classList.remove('hidden');
+                document.getElementById('question3-section').classList.remove('hidden');
+            } else {
+                document.getElementById('feedback1').innerHTML = '<span class="feedback-error">틀렸습니다. 전이 a는 ' + processType + ' 과정입니다.</span>';
+            }
+        }
+
+        // 문제 2 답안 확인
+        function checkEnergyAnswer() {
+            const transitionA = activeTransitions.find(t => t.name === 'a');
+            if (!transitionA) return;
+
+            const correctEnergy = Math.abs(energyLevels[transitionA.to].eV - energyLevels[transitionA.from].eV);
+            const userEnergy = parseFloat(document.getElementById('energy-input').value);
+            
+            if (isNaN(userEnergy)) {
+                document.getElementById('feedback2').innerHTML = '<span class="feedback-error">숫자를 입력해주세요.</span>';
+                return;
+            }
+            
+            if (Math.abs(userEnergy - correctEnergy) < 0.01) {
+                document.getElementById('feedback2').innerHTML = '<span class="feedback-success">정답입니다!</span>';
+            } else {
+                document.getElementById('feedback2').innerHTML = '<span class="feedback-error">틀렸습니다. 정답: ' + correctEnergy.toFixed(2) + 'eV</span>';
+            }
+        }
+
+        // 문제 3 답안 처리
+        function answerQuestion3(answer) {
+            userAnswers.question3 = answer;
+            
+            // 버튼 상태 업데이트
+            document.getElementById('q3-option-o').classList.toggle('selected', answer === 'O');
+            document.getElementById('q3-option-x').classList.toggle('selected', answer === 'X');
+
+            const transitionA = activeTransitions.find(t => t.name === 'a');
+            const transitionB = activeTransitions.find(t => t.name === 'b');
+            
+            if (!transitionA || !transitionB) return;
+
+            const energyA = Math.abs(energyLevels[transitionA.to].eV - energyLevels[transitionA.from].eV);
+            const energyB = Math.abs(energyLevels[transitionB.to].eV - energyLevels[transitionB.from].eV);
+            
+            const aLongerWavelength = energyA < energyB; // 에너지 작을수록 파장 길다
+            const isCorrect = (answer === 'O' && aLongerWavelength) || (answer === 'X' && !aLongerWavelength);
+            
+            if (isCorrect) {
+                document.getElementById('feedback3').innerHTML = '<span class="feedback-success">정답입니다.</span>';
+            } else {
+                document.getElementById('feedback3').innerHTML = '<span class="feedback-error">틀렸습니다.</span>';
+            }
+        }
+
+        // 키보드 접근성
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                if (event.target.classList.contains('option-btn')) {
+                    event.preventDefault();
+                    event.target.click();
+                }
+            }
+        });
+
+        // 페이지 로드시 초기화
+        window.addEventListener('load', function() {
+            generateNewTransitions();
+        });
+    </script>
+</body>
+</html>
