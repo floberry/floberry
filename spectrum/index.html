@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가시광선 스펙트럼 학습</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #888 0%, #666 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background: #f5f5f5;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .spectrum-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .spectrum {
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(to right, 
+                rgb(148, 0, 211) 0%,
+                rgb(75, 0, 130) 10%,
+                rgb(0, 0, 255) 20%,
+                rgb(0, 255, 255) 35%,
+                rgb(0, 255, 0) 50%,
+                rgb(255, 255, 0) 65%,
+                rgb(255, 165, 0) 80%,
+                rgb(255, 0, 0) 100%);
+            border-radius: 10px;
+            border: 2px solid #333;
+            position: relative;
+        }
+
+        .wavelength-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .question {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 30px 0;
+            color: #333;
+        }
+
+        .colors-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            margin: 30px 0;
+        }
+
+        .color-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #333;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .color-circle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .comparison-result {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .comparison-result.show {
+            opacity: 1;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 20px;
+        }
+
+        .correct {
+            background-color: #e8e8e8;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+
+        .incorrect {
+            background-color: #d8d8d8;
+            color: #333;
+            border: 1px solid #bbb;
+        }
+
+        .next-button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #888, #666);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .next-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .position-marker {
+            position: absolute;
+            top: -15px;
+            width: 3px;
+            height: 90px;
+            background-color: #000;
+            transform: translateX(-1.5px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .position-marker.show {
+            opacity: 1;
+        }
+
+        .marker-label {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>가시광선 스펙트럼</h1>
+        
+        <div class="spectrum-container">
+            <div class="spectrum" id="spectrum">
+                <div class="position-marker" id="marker1">
+                    <div class="marker-label" id="label1"></div>
+                </div>
+                <div class="position-marker" id="marker2">
+                    <div class="marker-label" id="label2"></div>
+                </div>
+            </div>
+            <div class="wavelength-labels">
+                <span>380nm</span>
+                <span>450nm</span>
+                <span>500nm</span>
+                <span>550nm</span>
+                <span>600nm</span>
+                <span>650nm</span>
+                <span>700nm</span>
+            </div>
+        </div>
+
+        <div class="question">
+            아래 두 색 중 파장이 긴 색을 고르세요.
+        </div>
+
+        <div class="colors-container">
+            <div>
+                <div class="color-circle" id="color1" onclick="selectColor(1)"></div>
+            </div>
+            <div class="comparison-result" id="comparisonResult"></div>
+            <div>
+                <div class="color-circle" id="color2" onclick="selectColor(2)"></div>
+            </div>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+        
+        <button class="next-button" onclick="generateNewColors()">새 문제</button>
+    </div>
+
+    <script>
+        let currentColors = {};
+        let answered = false;
+
+        function wavelengthToRGB(wavelength) {
+            let r, g, b;
+            
+            if (wavelength >= 380 && wavelength < 440) {
+                r = -(wavelength - 440) / (440 - 380);
+                g = 0;
+                b = 1;
+            } else if (wavelength >= 440 && wavelength < 490) {
+                r = 0;
+                g = (wavelength - 440) / (490 - 440);
+                b = 1;
+            } else if (wavelength >= 490 && wavelength < 510) {
+                r = 0;
+                g = 1;
+                b = -(wavelength - 510) / (510 - 490);
+            } else if (wavelength >= 510 && wavelength < 580) {
+                r = (wavelength - 510) / (580 - 510);
+                g = 1;
+                b = 0;
+            } else if (wavelength >= 580 && wavelength < 645) {
+                r = 1;
+                g = -(wavelength - 645) / (645 - 580);
+                b = 0;
+            } else if (wavelength >= 645 && wavelength <= 700) {
+                r = 1;
+                g = 0;
+                b = 0;
+            } else {
+                r = 0;
+                g = 0;
+                b = 0;
+            }
+
+            // 강도 조정
+            let factor;
+            if (wavelength >= 380 && wavelength < 420) {
+                factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
+            } else if (wavelength >= 420 && wavelength <= 700) {
+                factor = 1.0;
+            } else {
+                factor = 0.0;
+            }
+
+            r = Math.round(r * factor * 255);
+            g = Math.round(g * factor * 255);
+            b = Math.round(b * factor * 255);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function generateRandomWavelengths() {
+            let wave1, wave2;
+            do {
+                wave1 = Math.floor(Math.random() * (700 - 380 + 1)) + 380;
+                wave2 = Math.floor(Math.random() * (700 - 380 + 1)) + 380;
+            } while (Math.abs(wave1 - wave2) < 100); // 파장 차이가 100nm 이상
+
+            return [wave1, wave2];
+        }
+
+        function getColorName(wavelength) {
+            if (wavelength < 430) return "보라";
+            else if (wavelength < 480) return "파랑";
+            else if (wavelength < 520) return "청록";
+            else if (wavelength < 565) return "초록";
+            else if (wavelength < 590) return "노랑";
+            else if (wavelength < 625) return "주황";
+            else return "빨강";
+        }
+
+        function generateNewColors() {
+            answered = false;
+            const [wave1, wave2] = generateRandomWavelengths();
+            
+            currentColors = {
+                color1: { wavelength: wave1, isLonger: wave1 > wave2 },
+                color2: { wavelength: wave2, isLonger: wave2 > wave1 }
+            };
+
+            // 색상 적용
+            document.getElementById('color1').style.backgroundColor = wavelengthToRGB(wave1);
+            document.getElementById('color2').style.backgroundColor = wavelengthToRGB(wave2);
+
+            // 피드백 초기화
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('comparisonResult').classList.remove('show');
+
+            // 마커 숨기기
+            document.getElementById('marker1').classList.remove('show');
+            document.getElementById('marker2').classList.remove('show');
+        }
+
+        function selectColor(colorNum) {
+            if (answered) return;
+            
+            answered = true;
+            const selectedColor = currentColors[`color${colorNum}`];
+            const feedback = document.getElementById('feedback');
+            const comparisonResult = document.getElementById('comparisonResult');
+            
+            if (selectedColor.isLonger) {
+                feedback.textContent = '정답입니다!';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = '틀렸습니다!';
+                feedback.className = 'feedback incorrect';
+            }
+
+            // 부등호 표시
+            const wave1 = currentColors.color1.wavelength;
+            const wave2 = currentColors.color2.wavelength;
+            
+            if (wave1 > wave2) {
+                comparisonResult.textContent = '>';
+            } else {
+                comparisonResult.textContent = '<';
+            }
+            comparisonResult.classList.add('show');
+
+            // 스펙트럼에 위치 표시
+            showPositionMarkers();
+        }
+
+        function showPositionMarkers() {
+            const spectrum = document.getElementById('spectrum');
+            const spectrumWidth = spectrum.offsetWidth;
+            
+            // 380-700nm 범위를 스펙트럼 너비에 매핑
+            const wave1 = currentColors.color1.wavelength;
+            const wave2 = currentColors.color2.wavelength;
+            
+            const pos1 = ((wave1 - 380) / (700 - 380)) * spectrumWidth;
+            const pos2 = ((wave2 - 380) / (700 - 380)) * spectrumWidth;
+            
+            const marker1 = document.getElementById('marker1');
+            const marker2 = document.getElementById('marker2');
+            const label1 = document.getElementById('label1');
+            const label2 = document.getElementById('label2');
+            
+            marker1.style.left = pos1 + 'px';
+            marker2.style.left = pos2 + 'px';
+            
+            label1.textContent = `${wave1}nm`;
+            label2.textContent = `${wave2}nm`;
+            
+            marker1.classList.add('show');
+            marker2.classList.add('show');
+        }
+
+        // 초기 색상 생성
+        generateNewColors();
+    </script>
+</body>
+</html>
