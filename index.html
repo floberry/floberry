@@ -103,3 +103,40 @@
     </div>
 </body>
 </html>
+<!-- 기존 스펙트럼 카드 아래에 추가 -->
+<div class="simulation-card">
+    <div class="thumbnail" style="background: [새로운 배경색/그라데이션];">
+        [시뮬레이션 제목]
+    </div>
+    <div class="card-content">
+        <div class="card-title">[시뮬레이션 이름]</div>
+        <div class="card-description">
+            [시뮬레이션 설명]
+        </div>
+        <a href="./[폴더명]/" class="start-button">시뮬레이션 시작</a>
+    </div>
+</div>
+/* 기존 .simulation-card 스타일을 이것으로 교체 */
+.simulation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.simulation-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+<!-- 기존 단일 카드를 이것으로 교체 -->
+<div class="simulation-grid">
+    <div class="simulation-card">
+        <!-- 스펙트럼 카드 -->
+    </div>
+    <div class="simulation-card">
+        <!-- 새 시뮬레이션 카드 -->
+    </div>
+</div>
